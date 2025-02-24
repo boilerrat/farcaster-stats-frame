@@ -23,6 +23,45 @@ async function fetchUserWithScore(fid) {
   return data?.users?.[0];
 }
 
+async function fetchUserChannels(fid) {
+  try {
+    // Fetch channels created by the user
+    const createdResponse = await fetch(
+      `https://api.neynar.com/v2/farcaster/channel/created_by_user?fid=${fid}`,
+      {
+        headers: {
+          'accept': 'application/json',
+          'api_key': process.env.NEYNAR_API_KEY
+        }
+      }
+    );
+    const createdData = await createdResponse.json();
+    console.log('Created channels response:', JSON.stringify(createdData, null, 2));
+    
+    // Fetch channels the user is a member of
+    const memberResponse = await fetch(
+      `https://api.neynar.com/v2/farcaster/channel/user_channels?fid=${fid}`,
+      {
+        headers: {
+          'accept': 'application/json',
+          'api_key': process.env.NEYNAR_API_KEY
+        }
+      }
+    );
+    const memberData = await memberResponse.json();
+    console.log('Member channels response:', JSON.stringify(memberData, null, 2));
+    
+    // Make sure we're accessing the correct properties from the response
+    return {
+      created: createdData?.result?.channels || [],
+      member: memberData?.result?.channels || []
+    };
+  } catch (error) {
+    console.error('Error fetching channels:', error);
+    return { created: [], member: [] };
+  }
+}
+
 async function getAllCasts(fid) {
   let allCasts = [];
   let cursor = undefined;
@@ -31,7 +70,7 @@ async function getAllCasts(fid) {
   const seenHashes = new Set();
   let totalFound = 0;
 
-  while (hasMore && pageCount < 100) {
+  while (hasMore && pageCount < 500) {
     try {
       pageCount++;
       const response = await neynarClient.fetchAllCastsCreatedByUser(fid, cursor);
@@ -93,6 +132,10 @@ export async function GET(request) {
     const allCasts = await getAllCasts(user.fid);
     console.log('Total casts found:', allCasts.length);
 
+    // Get user's channels
+    const channels = await fetchUserChannels(user.fid);
+    console.log('User channels:', JSON.stringify(channels, null, 2));
+
     const enrichedUser = {
       username: userWithScore.username,
       display_name: userWithScore.display_name,
@@ -112,7 +155,9 @@ export async function GET(request) {
       },
       verified_accounts: userWithScore.verified_accounts || [],
       power_badge: userWithScore.power_badge || false,
-      profile_url: `https://warpcast.com/${userWithScore.username}`
+      profile_url: `https://warpcast.com/${userWithScore.username}`,
+      channels: channels,
+      location: userWithScore.profile?.location || null
     };
 
     console.log('Enriched user data:', JSON.stringify(enrichedUser, null, 2));

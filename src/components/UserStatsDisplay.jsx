@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import VerifiedAddresses from './VerifiedAddresses';
+import ReactCountryFlag from 'react-country-flag';
 
 export default function UserStatsDisplay() {
   const [searchInput, setSearchInput] = useState('');
@@ -42,13 +43,20 @@ export default function UserStatsDisplay() {
         metrics: {
           total_casts: user.metrics?.total_casts || 0
         },
-        verifications: user.verifications || {},
+        verifications: {
+          ethereum: user.verified_addresses?.eth_addresses || [],
+          ens: user.verified_addresses?.ens_names || [],
+          solana: user.verified_addresses?.sol_addresses || []
+        },
         verified_accounts: user.verified_accounts || [],
         power_badge: user.power_badge || false,
-        profile_url: user.profile_url
+        profile_url: user.profile_url || `https://warpcast.com/${user.username}`,
+        channels: user.channels || {},
+        location: user.location || null
       };
 
-      console.log('Processed data:', processedData);
+      console.log('Bio:', processedData.bio);
+      console.log('Location:', processedData.location);
       setUserData(processedData);
     } catch (err) {
       setError(err.message);
@@ -62,7 +70,7 @@ export default function UserStatsDisplay() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#25262b] backdrop-blur-sm rounded-lg shadow-xl p-8 w-full max-w-md border border-[#373A40]"
+        className="bg-[#25262b] backdrop-blur-sm rounded-lg shadow-xl p-8 w-full max-w-md border border-[#373A40] max-h-[85vh] overflow-y-auto"
       >
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-[#C1C2C5] mb-2 font-[Cinzel]">
@@ -93,14 +101,16 @@ export default function UserStatsDisplay() {
                   )}
                 </div>
                 <p className="text-sm text-[#909296] font-[Inter]">{userData.display_name}</p>
-                <a 
-                  href={userData.profile_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors font-[Inter]"
-                >
-                  View on Warpcast
-                </a>
+                <div className="flex items-center gap-2">
+                  <a 
+                    href={userData.profile_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors font-[Inter]"
+                  >
+                    View on Warpcast
+                  </a>
+                </div>
               </div>
               <div className="bg-[#373A40] rounded-full px-3 py-1">
                 <span className="text-sm font-medium text-[#C1C2C5] font-[Inter]">
@@ -115,18 +125,31 @@ export default function UserStatsDisplay() {
               </div>
             )}
 
-            {userData.location && (
-              <div className="mb-6 text-[#909296] text-sm font-[Inter] bg-[#373A40] rounded-lg p-4 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                </svg>
-                <span>
-                  {[userData.location.city, userData.location.state, userData.location.country]
-                    .filter(Boolean)
-                    .join(', ')}
-                </span>
-              </div>
-            )}
+            <div className="mb-6 text-[#909296] text-sm font-[Inter] bg-[#373A40] rounded-lg p-4 flex items-center gap-2">
+              {userData.location?.address?.country_code ? (
+                <>
+                  <ReactCountryFlag
+                    countryCode={userData.location.address.country_code.toUpperCase()}
+                    svg
+                    style={{
+                      width: '1.5em',
+                      height: '1.5em',
+                    }}
+                    title={userData.location.address.country}
+                  />
+                  <span>
+                    {userData.location.address.country}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Location not set</span>
+                </>
+              )}
+            </div>
 
             {userData.verified_accounts?.length > 0 && (
               <div className="mb-6 text-[#909296] text-sm font-[Inter] bg-[#373A40] rounded-lg p-4">
@@ -179,6 +202,65 @@ export default function UserStatsDisplay() {
                 <div className="text-sm text-[#909296] font-[Inter]">Neynar Score</div>
               </div>
             </div>
+
+            {/* Channels Section */}
+            {(userData.channels?.created?.length > 0 || userData.channels?.member?.length > 0) && (
+              <div className="mt-6">
+                {userData.channels.created?.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-[#C1C2C5] font-medium mb-2 font-[Inter]">Created Channels</h3>
+                    <div className="space-y-2">
+                      {userData.channels.created.map((channel) => (
+                        <div key={channel.id || channel.name} className="bg-[#373A40] rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            {channel.image_url && (
+                              <img 
+                                src={channel.image_url} 
+                                alt={channel.name}
+                                className="w-6 h-6 rounded object-cover"
+                              />
+                            )}
+                            <div>
+                              <div className="text-[#C1C2C5] font-medium">{channel.name}</div>
+                              {channel.description && (
+                                <div className="text-xs text-[#909296] line-clamp-2">{channel.description}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {userData.channels.member?.length > 0 && (
+                  <div>
+                    <h3 className="text-[#C1C2C5] font-medium mb-2 font-[Inter]">Member of Channels</h3>
+                    <div className="space-y-2">
+                      {userData.channels.member.map((channel) => (
+                        <div key={channel.id || channel.name} className="bg-[#373A40] rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            {channel.image_url && (
+                              <img 
+                                src={channel.image_url} 
+                                alt={channel.name}
+                                className="w-6 h-6 rounded object-cover"
+                              />
+                            )}
+                            <div>
+                              <div className="text-[#C1C2C5] font-medium">{channel.name}</div>
+                              {channel.description && (
+                                <div className="text-xs text-[#909296] line-clamp-2">{channel.description}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {userData.verifications.ethereum.length > 0 && (
               <VerifiedAddresses 
