@@ -25,7 +25,7 @@ export default function UserStatsDisplay() {
     setCastSearchInput('');
 
     try {
-      const response = await fetch(`/api/user?q=${encodeURIComponent(searchInput)}`);
+      const response = await fetch(`http://66.179.188.130:3001/api/user?q=${encodeURIComponent(searchInput)}`);
       const result = await response.json();
       
       if (!response.ok) throw new Error(result.error);
@@ -74,7 +74,7 @@ export default function UserStatsDisplay() {
     setCastsLoading(true);
     try {
       const response = await fetch(
-        `/api/casts?fid=${userData.fid}&keyword=${encodeURIComponent(castSearchInput)}`
+        `http://66.179.188.130:3001/api/casts?fid=${userData.fid}&keyword=${encodeURIComponent(castSearchInput)}`
       );
       const data = await response.json();
       
