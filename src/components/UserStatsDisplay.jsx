@@ -25,38 +25,44 @@ export default function UserStatsDisplay() {
     setCastSearchInput('');
 
     try {
-      const response = await fetch(`http://66.179.188.130:3001/api/user?q=${encodeURIComponent(searchInput)}`);
+      const response = await fetch(`https://66.179.188.130/api/user?q=${encodeURIComponent(searchInput)}`, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       
-      if (!response.ok) throw new Error(result.error);
-      
-      const user = result.data.result.users[0];
-      if (!user) throw new Error('User not found');
+      if (!result.data.result.users[0]) throw new Error('User not found');
 
       console.log('API Response:', JSON.stringify(result.data.result.users[0], null, 2));
 
       const processedData = {
-        username: user.username,
-        display_name: user.display_name || user.username,
-        fid: user.fid,
-        bio: user.bio || '',
-        follower_count: user.follower_count || 0,
-        following_count: user.following_count || 0,
-        pfp_url: user.pfp_url,
-        neynar_score: Number(user.neynar_score || 0),
+        username: result.data.result.users[0].username,
+        display_name: result.data.result.users[0].display_name || result.data.result.users[0].username,
+        fid: result.data.result.users[0].fid,
+        bio: result.data.result.users[0].bio || '',
+        follower_count: result.data.result.users[0].follower_count || 0,
+        following_count: result.data.result.users[0].following_count || 0,
+        pfp_url: result.data.result.users[0].pfp_url,
+        neynar_score: Number(result.data.result.users[0].neynar_score || 0),
         metrics: {
-          total_casts: user.metrics?.total_casts || 0
+          total_casts: result.data.result.users[0].metrics?.total_casts || 0
         },
         verifications: {
-          ethereum: user.verified_addresses?.eth_addresses || [],
-          ens: user.verified_addresses?.ens_names || [],
-          solana: user.verified_addresses?.sol_addresses || []
+          ethereum: result.data.result.users[0].verified_addresses?.eth_addresses || [],
+          ens: result.data.result.users[0].verified_addresses?.ens_names || [],
+          solana: result.data.result.users[0].verified_addresses?.sol_addresses || []
         },
-        verified_accounts: user.verified_accounts || [],
-        power_badge: user.power_badge || false,
-        profile_url: `https://warpcast.com/${user.username}`,
-        channels: user.channels || {},
-        location: user.location || null
+        verified_accounts: result.data.result.users[0].verified_accounts || [],
+        power_badge: result.data.result.users[0].power_badge || false,
+        profile_url: `https://warpcast.com/${result.data.result.users[0].username}`,
+        channels: result.data.result.users[0].channels || {},
+        location: result.data.result.users[0].location || null
       };
 
       setUserData(processedData);
@@ -74,11 +80,21 @@ export default function UserStatsDisplay() {
     setCastsLoading(true);
     try {
       const response = await fetch(
-        `http://66.179.188.130:3001/api/casts?fid=${userData.fid}&keyword=${encodeURIComponent(castSearchInput)}`
+        `https://66.179.188.130/api/casts?fid=${userData.fid}&keyword=${encodeURIComponent(castSearchInput)}`,
+        {
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
       );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
-      if (!response.ok) throw new Error(data.error);
+      if (!data.casts) throw new Error(data.error);
       
       setCasts(data.casts);
     } catch (err) {
