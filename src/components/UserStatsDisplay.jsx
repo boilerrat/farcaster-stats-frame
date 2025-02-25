@@ -4,12 +4,16 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import VerifiedAddresses from './VerifiedAddresses';
 import ReactCountryFlag from 'react-country-flag';
+import CastsCarousel from './CastsCarousel';
 
 export default function UserStatsDisplay() {
   const [searchInput, setSearchInput] = useState('');
+  const [castSearchInput, setCastSearchInput] = useState('');
   const [userData, setUserData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [casts, setCasts] = useState([]);
+  const [castsLoading, setCastsLoading] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -17,6 +21,8 @@ export default function UserStatsDisplay() {
 
     setLoading(true);
     setError(null);
+    setCasts([]);
+    setCastSearchInput('');
 
     try {
       const response = await fetch(`/api/user?q=${encodeURIComponent(searchInput)}`);
@@ -24,11 +30,9 @@ export default function UserStatsDisplay() {
       
       if (!response.ok) throw new Error(result.error);
       
-      // Process the user data from the API response
       const user = result.data.result.users[0];
       if (!user) throw new Error('User not found');
 
-      // Log the raw API response
       console.log('API Response:', JSON.stringify(result.data.result.users[0], null, 2));
 
       const processedData = {
@@ -55,13 +59,32 @@ export default function UserStatsDisplay() {
         location: user.location || null
       };
 
-      console.log('Bio:', processedData.bio);
-      console.log('Location:', processedData.location);
       setUserData(processedData);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCastSearch = async (e) => {
+    e.preventDefault();
+    if (!userData?.fid) return;
+
+    setCastsLoading(true);
+    try {
+      const response = await fetch(
+        `/api/casts?fid=${userData.fid}&keyword=${encodeURIComponent(castSearchInput)}`
+      );
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.error);
+      
+      setCasts(data.casts);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCastsLoading(false);
     }
   };
 
@@ -269,6 +292,36 @@ export default function UserStatsDisplay() {
                 solanaAddresses={userData.verifications.solana}
               />
             )}
+
+            {/* Cast Search Section */}
+            <div className="mt-6">
+              <form onSubmit={handleCastSearch} className="flex gap-2">
+                <input
+                  type="text"
+                  value={castSearchInput}
+                  onChange={(e) => setCastSearchInput(e.target.value)}
+                  placeholder="Search casts by keyword..."
+                  disabled={castsLoading}
+                  className="flex-1 px-4 py-2 rounded-lg border border-[#373A40] 
+                    focus:outline-none focus:border-[#4A5568] focus:ring-2 
+                    focus:ring-[#2D3748] text-sm bg-[#25262b] text-[#C1C2C5] 
+                    placeholder-[#909296] disabled:opacity-50 font-[Inter]"
+                />
+                <button 
+                  type="submit"
+                  disabled={castsLoading}
+                  className="px-4 py-2 bg-[#373A40] text-[#C1C2C5] rounded-lg 
+                    hover:bg-[#4A4D53] transition-colors text-sm font-medium
+                    disabled:opacity-50 font-[Inter]"
+                >
+                  {castsLoading ? 'Searching...' : 'Search Casts'}
+                </button>
+              </form>
+
+              <div className="mt-4">
+                <CastsCarousel casts={casts} loading={castsLoading} />
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -306,7 +359,7 @@ export default function UserStatsDisplay() {
         )}
 
         <div className="mt-6 text-center text-sm text-[#909296] font-[Inter]">
-          Powered by Neynar
+          Made by <a href="https://warpcast.com/boiler" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">Boiler</a>
         </div>
       </motion.div>
     </div>

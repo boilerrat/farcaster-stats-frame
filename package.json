@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@neynar/nodejs-sdk": "^1.21.1",
     "framer-motion": "^12.4.7",
     "next": "15.1.7",
