@@ -54,7 +54,7 @@ export default function UserStatsDisplay() {
         },
         verified_accounts: user.verified_accounts || [],
         power_badge: user.power_badge || false,
-        profile_url: user.profile_url || `https://warpcast.com/${user.username}`,
+        profile_url: `https://warpcast.com/${user.username}`,
         channels: user.channels || {},
         location: user.location || null
       };
